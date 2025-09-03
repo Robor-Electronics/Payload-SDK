@@ -99,6 +99,7 @@ static void DjiTest_FlightControlVelocityControlSample(void);
 static void DjiTest_FlightControlArrestFlyingSample(void);
 static void DjiTest_FlightControlSetGetParamSample(void);
 static void DjiTest_FlightControlPassiveTriggerFtsSample(void);
+static void DjiTest_FlightControlSlowRotateMotorSample(void);
 static T_DjiReturnCode DjiTest_TriggerFtsEventCallback(void);
 static void DjiTest_FlightControlSample(E_DjiTestFlightCtrlSampleSelect flightCtrlSampleSelect);
 
@@ -899,8 +900,6 @@ T_DjiReturnCode DjiTest_TriggerFtsEventCallback(void)
         USER_LOG_WARN("Note: This is an empty implementation, and the FTS signal needs to be triggered by the PWM signal.");
         return DJI_ERROR_SYSTEM_MODULE_CODE_SUCCESS;
     }
-
-    return DJI_ERROR_SYSTEM_MODULE_CODE_SYSTEM_ERROR;
 }
 
 void DjiTest_FlightControlPassiveTriggerFtsSample(void)
@@ -922,6 +921,63 @@ void DjiTest_FlightControlPassiveTriggerFtsSample(void)
     } else {
         USER_LOG_WARN("FTS trigger event callback has been registered, no need to register again.");
     }
+}
+
+static void DjiTest_FlightControlSlowRotateMotorSample(void)
+{
+    E_DjiFlightControllerElectronicSpeedControllerStatus escStatus;
+
+    T_DjiReturnCode returnCode = 0;
+
+    USER_LOG_INFO("Start rotating.");
+    returnCode = DjiFlightController_StartSlowRotateMotor();
+    if (returnCode != DJI_ERROR_SYSTEM_MODULE_CODE_SUCCESS) {
+        USER_LOG_ERROR("Start slow rotate blade failed, error code is 0x%08X", returnCode);
+        return ;
+    }
+
+    returnCode = DjiFlightController_GetElectronicSpeedControllerStatus(&escStatus);
+    if (returnCode != DJI_ERROR_SYSTEM_MODULE_CODE_SUCCESS) {
+        USER_LOG_ERROR("Fail to get ESC status, error code is 0x%08X", returnCode);
+    }
+
+    USER_LOG_INFO("The ESC status is: %s motor(s) in rotate mode",
+        escStatus == DJI_FLIGHT_CONTROLLER_NO_MOTOR_IN_SLOW_ROTATE_MODE ? "no" :
+        escStatus == DJI_FLIGHT_CONTROLLER_SOME_MOTOR_IN_SLOW_ROTATE_MODE ? "some" :
+        escStatus == DJI_FLIGHT_CONTROLLER_ALL_MOTOR_IN_SLOW_ROTATE_MODE ? "all" : "(error)");
+
+    for (int32_t i = 0; i < 8; i++) {
+        s_osalHandler->TaskSleepMs(1000);
+
+        returnCode = DjiFlightController_GetElectronicSpeedControllerStatus(&escStatus);
+        if (returnCode != DJI_ERROR_SYSTEM_MODULE_CODE_SUCCESS) {
+            USER_LOG_ERROR("Fail to get ESC status, error code is 0x%08X", returnCode);
+        }
+
+        USER_LOG_INFO("The ESC status is: %s motor(s) in rotate mode",
+            escStatus == DJI_FLIGHT_CONTROLLER_NO_MOTOR_IN_SLOW_ROTATE_MODE ? "no" :
+            escStatus == DJI_FLIGHT_CONTROLLER_SOME_MOTOR_IN_SLOW_ROTATE_MODE ? "some" :
+            escStatus == DJI_FLIGHT_CONTROLLER_ALL_MOTOR_IN_SLOW_ROTATE_MODE ? "all" : "(error)");
+    }
+
+    USER_LOG_INFO("Stop rotating.");
+    returnCode = DjiFlightController_StopSlowRotateMotor();
+    if (returnCode != DJI_ERROR_SYSTEM_MODULE_CODE_SUCCESS) {
+        USER_LOG_INFO("Stop slow rotate blade failed, error code is 0x%08X", returnCode);
+        return ;
+    }
+
+    s_osalHandler->TaskSleepMs(1000);
+
+    returnCode = DjiFlightController_GetElectronicSpeedControllerStatus(&escStatus);
+    if (returnCode != DJI_ERROR_SYSTEM_MODULE_CODE_SUCCESS) {
+        USER_LOG_ERROR("Fail to get ESC status, error code is 0x%08X", returnCode);
+    }
+
+    USER_LOG_INFO("The ESC status is: %s motor(s) in rotate mode",
+        escStatus == DJI_FLIGHT_CONTROLLER_NO_MOTOR_IN_SLOW_ROTATE_MODE ? "no" :
+        escStatus == DJI_FLIGHT_CONTROLLER_SOME_MOTOR_IN_SLOW_ROTATE_MODE ? "some" :
+        escStatus == DJI_FLIGHT_CONTROLLER_ALL_MOTOR_IN_SLOW_ROTATE_MODE ? "all" : "(error)");
 }
 
 void DjiTest_FlightControlSample(E_DjiTestFlightCtrlSampleSelect flightCtrlSampleSelect)
@@ -953,6 +1009,10 @@ void DjiTest_FlightControlSample(E_DjiTestFlightCtrlSampleSelect flightCtrlSampl
         }
         case E_DJI_TEST_FLIGHT_CTRL_SAMPLE_SELECT_FTS_TRIGGER: {
             DjiTest_FlightControlPassiveTriggerFtsSample();
+            break;
+        }
+        case E_DJI_TEST_FLIGHT_CTRL_SAMPLE_SELECT_SLOW_ROTATE_BLADE: {
+            DjiTest_FlightControlSlowRotateMotorSample();
             break;
         }
         default:
@@ -1304,10 +1364,16 @@ bool DjiTest_FlightControlGoHomeAndConfirmLanding(void)
                DjiTest_FlightControlGetValueOfFlightStatus() == DJI_FC_SUBSCRIPTION_FLIGHT_STATUS_IN_AIR) {
             T_DjiFcSubscriptionHeightFusion heightFusion = DjiTest_FlightControlGetValueOfHeightFusion();
             s_osalHandler->TaskSleepMs(1000);
-            if (aircraftInfoBaseInfo.aircraftType == DJI_AIRCRAFT_TYPE_M3E ||
-                aircraftInfoBaseInfo.aircraftType == DJI_AIRCRAFT_TYPE_M3T ||
-                aircraftInfoBaseInfo.aircraftType == DJI_AIRCRAFT_TYPE_M3D ||
-                aircraftInfoBaseInfo.aircraftType == DJI_AIRCRAFT_TYPE_M3TD) {
+            if (DJI_AIRCRAFT_TYPE_M3E == aircraftInfoBaseInfo.aircraftType || DJI_AIRCRAFT_TYPE_M3T == aircraftInfoBaseInfo.aircraftType
+                || DJI_AIRCRAFT_TYPE_M3D == aircraftInfoBaseInfo.aircraftType || DJI_AIRCRAFT_TYPE_M3TD == aircraftInfoBaseInfo.aircraftType
+                || DJI_AIRCRAFT_TYPE_M3TA == aircraftInfoBaseInfo.aircraftType
+                || DJI_AIRCRAFT_TYPE_M4T == aircraftInfoBaseInfo.aircraftType
+                || DJI_AIRCRAFT_TYPE_M4TD == aircraftInfoBaseInfo.aircraftType
+                || DJI_AIRCRAFT_TYPE_M4D == aircraftInfoBaseInfo.aircraftType
+                || DJI_AIRCRAFT_TYPE_M4E == aircraftInfoBaseInfo.aircraftType
+                || DJI_AIRCRAFT_TYPE_M4TD == aircraftInfoBaseInfo.aircraftType
+                || DJI_AIRCRAFT_TYPE_M4D == aircraftInfoBaseInfo.aircraftType
+            ) {
                 if ((dji_f64_t) 0.45 < heightFusion && heightFusion < (dji_f64_t) 0.55) {
                     break;
                 }
@@ -1605,6 +1671,59 @@ DjiTest_FlightControlJoystickCtrlAuthSwitchEventCallback(T_DjiFlightControllerJo
     }
 
     return DJI_ERROR_SYSTEM_MODULE_CODE_SUCCESS;
+}
+
+static T_DjiReturnCode DjiTest_FlightControlSetFtsTrigger(E_DjiMountPosition position, const char* desc)
+{
+    T_DjiReturnCode djiStat;
+    T_DjiFtsPwmEscTriggerStatus esc_status;
+
+    djiStat = DjiFlightController_SelectFtsPwmTrigger(position);
+    if (djiStat != DJI_ERROR_SYSTEM_MODULE_CODE_SUCCESS) {
+        USER_LOG_ERROR("select fts pwm trigger E-PORT error, error code: 0x%08X", djiStat);
+        return djiStat;
+    }
+
+    djiStat = DjiFlightController_GetFtsPwmTriggerStatus(&esc_status);
+    if (djiStat != DJI_ERROR_SYSTEM_MODULE_CODE_SUCCESS) {
+        USER_LOG_ERROR("get pwm trigger status error, error code: 0x%08X", djiStat);
+        return djiStat;
+    }
+
+    if (esc_status.ESC[0].fts_select != position || esc_status.ESC[1].fts_select != position)
+    {
+        USER_LOG_ERROR("pwm trigger status incorrect");
+        return djiStat;
+    }
+
+    if (esc_status.ESC[0].fts_status == DJI_FLIGHT_CONTROLLER_FTS_NOT_TRIGGERD && esc_status.ESC[1].fts_status == DJI_FLIGHT_CONTROLLER_FTS_NOT_TRIGGERD)
+
+    USER_LOG_INFO("Set fts trigger position %s success", desc);
+
+    return djiStat;
+}
+
+T_DjiReturnCode DjiTest_FlightControlFtsPwmTriggerSample(E_DjiMountPosition position, const char* port_name)
+{
+    T_DjiReturnCode returnCode;
+
+    returnCode = DjiTest_FlightControlInit();
+    if (returnCode != DJI_ERROR_SYSTEM_MODULE_CODE_SUCCESS) {
+        USER_LOG_ERROR("Init flight Control sample failed,error code:0x%08llX", returnCode);
+        return returnCode;
+    }
+    returnCode = DjiTest_FlightControlSetFtsTrigger(position, port_name);
+    if (returnCode != DJI_ERROR_SYSTEM_MODULE_CODE_SUCCESS) {
+        USER_LOG_ERROR("Test select %s fts pwm trigger failed", port_name);
+        return returnCode;
+    }
+
+    returnCode = DjiTest_FlightControlDeInit();
+    if (returnCode != DJI_ERROR_SYSTEM_MODULE_CODE_SUCCESS) {
+        USER_LOG_ERROR("Deinit Flight Control sample failed,error code:0x%08llX", returnCode);
+        return returnCode;
+    }
+    return returnCode;
 }
 
 /****************** (C) COPYRIGHT DJI Innovations *****END OF FILE****/

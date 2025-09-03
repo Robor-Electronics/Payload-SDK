@@ -180,7 +180,7 @@ REWAIT:
         }
 
         sendDataCount++;
-        memset(sendBuf, sendDataCount, TEST_MOP_CHANNEL_NORMAL_TRANSFOR_SEND_BUFFER);
+        memset(sendBuf, 'A' - 1 + (sendDataCount % 26), TEST_MOP_CHANNEL_NORMAL_TRANSFOR_SEND_BUFFER);
         returnCode = DjiMopChannel_SendData(s_testMopChannelNormalOutHandle, sendBuf,
                                             TEST_MOP_CHANNEL_NORMAL_TRANSFOR_SEND_BUFFER, &realLen);
         if (returnCode != DJI_ERROR_SYSTEM_MODULE_CODE_SUCCESS) {
@@ -722,6 +722,8 @@ static void *DjiTest_MopChannelFileServiceRecvTask(void *arg)
                         if (fileTransfor->subcmd == DJI_MOP_CHANNEL_FILE_TRANSFOR_SUBCMD_FILE_DATA_NORMAL) {
                             s_fileServiceContent[clientNum].uploadState = MOP_FILE_SERVICE_UPLOAD_DATA_SENDING;
                             s_fileServiceContent[clientNum].uploadSeqNum = fileTransfor->seqNum;
+
+                            USER_LOG_INFO("fileTransfor->seqNum  %d", fileTransfor->seqNum);
 
                             uploadWriteLen = fwrite(&recvBuf[UTIL_OFFSETOF(T_DjiMopChannel_FileTransfor, data)], 1,
                                                     fileTransfor->dataLen, uploadFile);

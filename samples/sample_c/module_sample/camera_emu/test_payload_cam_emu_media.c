@@ -23,6 +23,7 @@
  */
 
 /* Includes ------------------------------------------------------------------*/
+#include <errno.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include "dji_logger.h"
@@ -193,7 +194,8 @@ T_DjiReturnCode DjiTest_CameraEmuMediaStartService(void)
     UtilBuffer_Init(&s_mediaPlayCommandBufferHandler, s_mediaPlayCommandBuffer, sizeof(s_mediaPlayCommandBuffer));
 
     if (aircraftInfoBaseInfo.aircraftType == DJI_AIRCRAFT_TYPE_M300_RTK ||
-        aircraftInfoBaseInfo.aircraftType == DJI_AIRCRAFT_TYPE_M350_RTK) {
+        aircraftInfoBaseInfo.aircraftType == DJI_AIRCRAFT_TYPE_M350_RTK ||
+        aircraftInfoBaseInfo.aircraftType == DJI_AIRCRAFT_TYPE_M400) {
         returnCode = DjiPayloadCamera_RegMediaDownloadPlaybackHandler(&s_psdkCameraMedia);
         if (returnCode != DJI_ERROR_SYSTEM_MODULE_CODE_SUCCESS) {
             USER_LOG_ERROR("psdk camera media function init error.");
@@ -726,7 +728,7 @@ static T_DjiReturnCode DjiPlayback_GetFrameRateOfVideoFile(const char *path, flo
 
     ret = fscanf(fpCommand, "r_frame_rate=%d/%d", &frameRateMolecule, &frameRateDenominator);
     if (ret <= 0) {
-        USER_LOG_ERROR("can not find frame rate.");
+        USER_LOG_ERROR("can not find frame rate form \"%s\".", path);
         returnCode = DJI_ERROR_SYSTEM_MODULE_CODE_NOT_FOUND;
         goto out;
     }
@@ -1196,7 +1198,7 @@ static void *UserCameraMedia_SendVideoTask(void *arg)
         exit(1);
     }
     if (s_isMediaFileDirPathConfigured == true) {
-        snprintf(tempPath, DJI_FILE_PATH_SIZE_MAX, "%sPSDK_0005.h264", s_mediaFileDirPath);
+        snprintf(tempPath, DJI_FILE_PATH_SIZE_MAX, "%smedia_file/PSDK_0005.h264", s_mediaFileDirPath);
     } else {
         snprintf(tempPath, DJI_FILE_PATH_SIZE_MAX, "%smedia_file/PSDK_0005.h264", curFileDirPath);
     }
@@ -1309,7 +1311,7 @@ static void *UserCameraMedia_SendVideoTask(void *arg)
 
         fpFile = fopen(transcodedFilePath, "rb+");
         if (fpFile == NULL) {
-            USER_LOG_ERROR("open video file fail.");
+            USER_LOG_ERROR("open video file:\"%s\" fail:%d.", transcodedFilePath, errno);
             continue;
         }
 

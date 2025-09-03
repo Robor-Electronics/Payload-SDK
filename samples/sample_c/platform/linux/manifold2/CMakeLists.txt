@@ -41,7 +41,7 @@ file(GLOB_RECURSE MODULE_SAMPLE_SRC ../../../module_sample/*.c)
 
 include_directories(../../../module_sample)
 include_directories(../common)
-include_directories(../manifold2/application)
+include_directories(application)
 
 include_directories(../../../../../psdk_lib/include)
 link_directories(../../../../../psdk_lib/lib/${TOOLCHAIN_NAME})
@@ -82,7 +82,7 @@ else ()
     message(STATUS "Cannot Find LIBUSB")
 endif (LIBUSB_FOUND)
 
-target_link_libraries(${PROJECT_NAME} m)
+target_link_libraries(${PROJECT_NAME} m dl)
 
 add_custom_command(TARGET ${PROJECT_NAME}
         PRE_LINK COMMAND cmake ..

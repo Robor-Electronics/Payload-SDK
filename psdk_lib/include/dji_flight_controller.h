@@ -237,6 +237,17 @@ typedef enum {
     DJI_FLIGHT_CONTROLLER_DISABLE_RC_LOST_ACTION = 1,
 } E_DjiFlightControllerRCLostActionEnableStatus;
 
+typedef enum {
+    DJI_FLIGHT_CONTROLLER_NO_MOTOR_IN_SLOW_ROTATE_MODE = 0,
+    DJI_FLIGHT_CONTROLLER_SOME_MOTOR_IN_SLOW_ROTATE_MODE = 1,
+    DJI_FLIGHT_CONTROLLER_ALL_MOTOR_IN_SLOW_ROTATE_MODE = 2,
+} E_DjiFlightControllerElectronicSpeedControllerStatus;
+
+typedef enum {
+    DJI_FLIGHT_CONTROLLER_FTS_NOT_TRIGGERD = 0,
+    DJI_FLIGHT_CONTROLLER_FTS_TRIGGERD = 1,
+} E_DjiFlightControllerFtsStatus;
+
 /**
  * @brief Joystick mode.
  * @note You need to set joystick mode first before start to send joystick command to aircraft.
@@ -273,6 +284,16 @@ typedef struct {
 } T_DjiFlightControllerRidInfo;
 
 #pragma pack()
+
+typedef struct {
+    E_DjiMountPosition fts_select;
+    E_DjiFlightControllerFtsStatus fts_status;
+    uint8_t fts_pwm_cnt; /* correct number of PWM signals received */
+} T_DjiFtsPwmTriggerStatus;
+
+typedef struct {
+    T_DjiFtsPwmTriggerStatus ESC[4]; /* trigger status of the two ESCs */
+} T_DjiFtsPwmEscTriggerStatus;
 
 /* Exported functions --------------------------------------------------------*/
 /**
@@ -648,6 +669,49 @@ DjiFlightController_GetEnableRCLostActionStatus(E_DjiFlightControllerRCLostActio
  * @return Execution result.
  */
 T_DjiReturnCode DjiFlightController_RegTriggerFtsEventCallback(TriggerFtsEventCallback callback);
+
+/**
+ * @brief Start to rotate motors slowly.
+ * @return Execution result.
+ */
+T_DjiReturnCode DjiFlightController_StartSlowRotateMotor(void);
+
+/**
+ * @brief Stop to rotate motors slowly.
+ * @return Execution result.
+ */
+T_DjiReturnCode DjiFlightController_StopSlowRotateMotor(void);
+
+/**
+ * @brief Get the status of the ESC.
+ * @param status: The status of the motor on aircraft.
+ * @return Execution result.
+ */
+T_DjiReturnCode DjiFlightController_GetElectronicSpeedControllerStatus(E_DjiFlightControllerElectronicSpeedControllerStatus *status);
+
+/**
+ * @brief Select Fts pwm trigger.
+ * - Notes:Timing requirement: This API must be called while the aircraft is on the ground (not airborne). Calls made during flight will fail or be rejected.
+ * - Function: This call only selects/enables the PWM trigger port on the flight controller side.
+ *   It does NOT emit PWM signals nor perform the motor-stop action itself. The actual motor-stop must be triggered by sending PWM signals via external PWM hardware pins.
+ * - Recommended flow:
+ *   1) Call DjiFlightController_SelectFtsPwmTrigger(position) on ground to enable the port;
+ *   2) Send the motor-stop PWM from an external PWM controller to that port;
+ * @param position
+ * - Supported models/ports:
+ *   - M400: only support DJI_MOUNT_POSITION_EXTENSION_PORT_V2_NO4.
+ * @return Possible failure reasons include invalid param, aircraft not on ground, hardware unsupported, or module not initialized.
+ */
+T_DjiReturnCode DjiFlightController_SelectFtsPwmTrigger(E_DjiMountPosition position);
+
+/**
+ * @brief Get Fts pwm trigger status.
+ * Notes:This API is deprecated and will be removed in a future release. It is NOT recommended for use. Supported models only: M4 serials.
+ * Recommended alternative: To confirm motor-stop (FTS) effects, use DJI_FC_SUBSCRIPTION_TOPIC_ESC_DATA fc subscription
+ * @param trigger_status
+ * @return Execution result.
+ */
+T_DjiReturnCode DjiFlightController_GetFtsPwmTriggerStatus(T_DjiFtsPwmEscTriggerStatus* trigger_status);
 
 #ifdef __cplusplus
 }
