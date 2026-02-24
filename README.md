@@ -1,8 +1,8 @@
 # DJI Payload SDK (PSDK)
 
-![](https://img.shields.io/badge/version-V3.13.0-blue.svg)
-![](https://img.shields.io/badge/platform-linux_|_rtos-pink.svg)
-![](https://img.shields.io/badge/license-MIT-green.svg)
+![](https://img.shields.io/badge/version-V3.15.0-red.svg)
+![](https://img.shields.io/badge/platform-linux_|_rtos-yellow.svg)
+![](https://img.shields.io/badge/license-MIT-purple.svg)
 
 ## What is the DJI Payload SDK?
 
@@ -23,19 +23,12 @@ to get the latest version information.
 
 ## Latest Release
 
-The latest release version of PSDK is 3.13.0. This version of Payload SDK mainly add some new features support and fixed some
+The latest release version of PSDK is 3.15.0. This version of Payload SDK mainly add some new features support and fixed some
 bugs. Please refer to the release notes for detailed changes list.
 
-### Manifold 3 Support
-- **Supports M4D series drone dock versions (DJI Pilot app temporarily unsupported)**
-- **Enables PSDK advanced features for M4D**
-- **Enables MOP function for M400**
-- **Supports installation/uninstallation of Manifold 3 apps via DJI FlightHub**
-- **Enables rendering of Manifold 3 AI app recognition results in DJI FlightHub**
-
-### Fixes and Optimizations
-- **Fixed M300 PSDK low-speed data transmission failure from payload port to onboard port**
-- **Fixed M350 drone's inability to acquire real-time streams from Zenmuse P1 and Zenmuse L1**
+* Added Manifold 3 support for Matrice 4E/4T with basic and advanced features.
+* Added Manifold 3 support for Matrice 4D/4TD (Pilot version) with basic and advanced features.
+* Fixed Matrice 400 streaming display glitch when paired with SkyPort V2/X-Port. Resolved after updating Matrice 400 firmware.
 
 ## License
 
